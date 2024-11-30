@@ -1,7 +1,5 @@
-rm(list = ls())
-graphics.off()
-
 library(ggplot2)
+library(testthat)
 
 interpCuad <- function(x, y, xq) {
   yq <- numeric(0)
@@ -74,28 +72,11 @@ plot_data <- data.frame(
   sin_x_grafica = sin(x_grafica)
 )
 
-# Plot continuous graph (illustrative)
-plt <- ggplot(plot_data, aes(x = x_grafica, y = sin_x_grafica)) +
-  geom_line(color = "black") +
-  labs(x = xlabel, y = ylabel) +
-  theme(text = element_text(size = 13))
-
-# Plot data points
-plt <- plt + geom_point(aes(x = x, y = y), color = "blue", size = 3)
-
 # Perform quadratic interpolation
 y_interpolados <- interpCuad(x, y, xq)
 
-# Plot quadratic interpolation in blue
-plt <- plt + geom_line(aes(x = xq, y = y_interpolados), color = "blue", linetype = "dashed", size = 1) +
-  geom_point(aes(x = xq, y = y_interpolados), color = "blue", shape = 8, size = 3)
-
 # Perform linear interpolation
 y_lineal <- approx(x, y, xq)$y
-
-# Plot linear interpolation in red
-plt <- plt + geom_line(aes(x = xq, y = y_lineal), color = "red", linetype = "dotted", size = 1) +
-  geom_point(aes(x = xq, y = y_lineal), color = "red", shape = 4, size = 3)
 
 # Calculate RMS errors
 y_verdadera <- sin(xq)
@@ -105,6 +86,35 @@ errorRMSinterpolado <- sqrt(mean((y_interpolados - y_verdadera)^2))
 # Print RMS errors
 cat("RMS Error for Linear Interpolation: ", errorRMSlineal, "\n")
 cat("RMS Error for Quadratic Interpolation: ", errorRMSinterpolado, "\n")
+
+# Verify results are consistent with the previous MATLAB version
+expect_equal(errorRMSlineal, 0.24873492, tolerance = 1e-8) # Linear interpolation error is consistent with the previous MATLAB version
+expect_equal(errorRMSinterpolado, 0.13246188, tolerance = 1e-8) # Quadratic interpolation error is consistent with the previous MATLAB version
+
+# Plot continuous graph (illustrative)
+graphics.off()
+plt <- ggplot(plot_data, aes(x = x_grafica, y = sin_x_grafica)) +
+  geom_line(color = "black") +
+  labs(x = xlabel, y = ylabel) +
+  theme(text = element_text(size = 13))
+
+# Create a data frame for plotting interpolated values
+interp_data <- data.frame(
+  xq = xq,
+  y_interpolados = y_interpolados,
+  y_lineal = y_lineal
+)
+
+# Plot data points
+plt <- plt + geom_point(data = data.frame(x = x, y = y), aes(x = x, y = y), color = "blue", size = 3)
+
+# Plot quadratic interpolation in blue
+plt <- plt + geom_line(data = interp_data, aes(x = xq, y = y_interpolados), color = "blue", linetype = "dashed", size = 1) +
+  geom_point(data = interp_data, aes(x = xq, y = y_interpolados), color = "blue", shape = 8, size = 3)
+
+# Plot linear interpolation in red
+plt <- plt + geom_line(data = interp_data, aes(x = xq, y = y_lineal), color = "red", linetype = "dotted", size = 1) +
+  geom_point(data = interp_data, aes(x = xq, y = y_lineal), color = "red", shape = 4, size = 3)
 
 # Show the plot
 print(plt)
